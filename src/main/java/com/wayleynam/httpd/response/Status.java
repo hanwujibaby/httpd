@@ -62,8 +62,6 @@ public enum Status implements IStatus {
         return null;
     }
 
-
-
     @Override
     public String getDescription() {
         return ""+this.requestStatus+"==>"+this.description;

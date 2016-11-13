@@ -9,6 +9,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URL;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Level;
@@ -69,7 +70,19 @@ public abstract class Httpd {
 
     public static Logger logger = Logger.getLogger(Httpd.class.getName());
 
-    protected Map<String, String> MIME_TYPES;
+    protected static Map<String, String> MIME_TYPES;
+
+    public static Map<String,String> getMimeTypes(){
+        if(MIME_TYPES==null){
+            MIME_TYPES=new HashMap<>();
+            loadMimeTypes(MIME_TYPES,"META-INF/default-mimetypes.properties");
+        }
+        if(MIME_TYPES==null){
+            logger.log(Level.WARNING,"cannot load mimetypes.propeties");
+        }
+
+        return MIME_TYPES;
+    }
 
 
     /**
@@ -88,7 +101,6 @@ public abstract class Httpd {
                 try{
                     is=url.openStream();
                     properties.load(is);
-
                 }catch (IOException e){
                     logger.log(Level.INFO,"cannot load mime_type resources");
                 }finally {
@@ -101,9 +113,36 @@ public abstract class Httpd {
             logger.log(Level.INFO,"cannot load mime_type resources");
         }
 
-
     }
 
+    public static String getMimeTypeForFile(String url){
+        int dot=url.indexOf(".");
+        String mime=null;
+        if(dot>0){
+            mime=getMimeTypes().get(url.substring(dot+1)).toLowerCase();
+        }
+
+        return mime==null?"application/octet-stream":mime;
+    }
+
+
+    public  String hostname;
+
+    public final int port;
+
+
+    private volatile ServerSocket myServerSocket;
+
+
+
+    Httpd(int port){
+        this.port=port;
+    }
+
+    Httpd(String hostName,int port){
+        this.hostname=hostName;
+        this.port=port;
+    }
 
 
     public final static void safeClose(Object closable){
@@ -118,7 +157,6 @@ public abstract class Httpd {
                 }
 
             }
-
 
         }catch (Exception e){
             logger.log(Level.SEVERE,"cannot close stream,e:"+e.getMessage());
